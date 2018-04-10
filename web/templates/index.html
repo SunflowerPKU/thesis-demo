@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Overview</title>
+    <meta charset="utf-8">
+    <script src="{{ url_for('static', filename='echarts.js') }}"></script>
+</head>
+<body>
+
+    {% for metric_name in metric_names %}
+        <div id="{{ metric_name }}">
+            <div>
+                <div id="{{ metric_name }}_median" style="width: 600px;height:400px;">
+                </div>
+                <p>Slope: {{metrics[metric_name]['median']['stat']['slope']}}  p-value: {{metrics[metric_name]['median']['stat']['p-value']}}</p>
+            </div>
+
+            <div>
+                <div id="{{ metric_name }}_mean" style="width: 600px;height:400px;">
+                </div>
+                <p>Slope: {{metrics[metric_name]['mean']['stat']['slope']}}  p-value: {{metrics[metric_name]['mean']['stat']['p-value']}}</p>
+            </div>
+        </div>
+    {% endfor %}
+
+    <script type="text/javascript">
+    {% for metric_name in metric_names %}
+    {% for type in ['median', 'mean'] %}
+
+        var {{metric_name}}_{{type}}_chart = echarts.init(document.getElementById('{{metric_name}}_{{type}}'));
+
+        xs = {{ metrics[metric_name][type]['data']['x'] }}
+        ys ={{ metrics[metric_name][type]['data']['y'] }}
+
+        // 指定图表的配置项和数据
+        var {{metric_name}}_{{type}}_option = {
+            title: {
+                text: '{{metric_labels[metric_name]}} {{type_labels[type]}}'
+            },
+            tooltip: {},
+            legend: {
+                data:['{{metric_labels[metric_name]}} {{type_labels[type]}}']
+            },
+            xAxis: {
+                data: xs
+            },
+            yAxis: {},
+            series: [{
+                name: '{{metric_labels[metric_name]}} {{type_labels[type]}}',
+                type: 'bar',
+                data: ys
+            }]
+        };
+
+        {{metric_name}}_{{type}}_chart.setOption({{metric_name}}_{{type}}_option);
+    {% endfor %}
+    {% endfor %}
+    </script>
+</body>
+</html>

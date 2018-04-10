@@ -2,6 +2,7 @@ import pandas as pd
 import re
 import numpy as np
 import statsmodels.api as sm
+import logging
 
 from scipy import stats
 from collections import Counter
@@ -309,16 +310,20 @@ def match_files_patterns(files, patterns):
     return False
 
 def match_file_pattern(file, pattern):
-    pattern = pattern.replace('*', '.*')
-    if pattern.endswith('/'):
-        pattern = pattern + '.*'
-    elif pattern.endswith('.*'):
-        pattern = pattern[:-2] + "[^/]*"
-    pattern = "^" + pattern
-    #print pattern
-    pattern = re.compile(pattern)
-    match = pattern.search(file)
-    if match != None and match.end() == len(file):
-        return True
-    else:
+    try:
+        pattern = pattern.replace('*', '.*')
+        if pattern.endswith('/'):
+            pattern = pattern + '.*'
+        elif pattern.endswith('.*'):
+            pattern = pattern[:-2] + "[^/]*"
+        pattern = "^" + pattern
+        #print pattern
+        pattern = re.compile(pattern)
+        match = pattern.search(file)
+        if match != None and match.end() == len(file):
+            return True
+        else:
+            return False
+    except Exception, e:
         return False
+
