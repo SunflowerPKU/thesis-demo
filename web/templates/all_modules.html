@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>All Modules</title>
+    <meta charset="utf-8">
+    <link rel="stylesheet" href="{{ url_for('static', filename='bootstrap.min.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='jquery-ui.min.css') }}">
+
+    <script src="{{ url_for('static', filename='echarts.js') }}"></script>
+    <script src="{{ url_for('static', filename='jquery-3.3.1.min.js') }}"></script>
+    <script src="{{ url_for('static', filename='jquery-ui.min.js') }}"></script>
+    <script src="{{ url_for('static', filename='popper.min.js') }}"></script>
+    <script src="{{ url_for('static', filename='bootstrap.min.js') }}"></script>
+    <script>
+      $( function() {
+        var module_list = {{modules | tojson }};
+        $( "#module_search" ).autocomplete({
+          source: module_list
+        });
+      } );
+    </script>
+</head>
+<body>
+
+    <div class="container-fluid" style="margin-top: 50px; margin-bottom: 50px;">
+            <div class="row">
+                <div class="col-sm-1"></div>
+                <div class="col-sm-8">
+                    {% with messages = get_flashed_messages(with_categories=true) %}
+                      {% if messages %}
+                        {% for category, message in messages %}
+                        <div class="alert alert-{{category}}" role="alert">
+                            {{ message }}
+                        </div>
+                        {% endfor %}
+                      {% endif %}
+                    {% endwith %}
+                    <h1>Linux Kernel 模块列表</h1>
+                    {% for key in alpha.keys() | sort %}
+                    <div style="padding-top: 30px;">
+                        <h2>{{key}}</h2>
+                        {% for module in alpha[key] %}
+                            <a href="{{url_for('module', module_name=module)}}">{{module}}</a>
+                        {%endfor %}
+                    </div>
+                    {% endfor %}
+
+                    <div style="padding-top: 30px;">
+                        <h2> Other </h2>
+                        {%for module in other %}
+                                <a href="{{url_for('module', module_name=module)}}">{{module}}</a>
+                        {% endfor %}
+                    </div>
+                </div>
+                <div class="col-sm-3" style="margin-top:100px;">
+                    <div class="ui-widget">
+                      <label for="module">Search: </label>
+                      <input id="module_search" />
+                      <input type="button" value="Go" onclick="window.location.href='/module/' + $('#module_search').val()" />
+                    </div>
+                    <a href="/">首页</a>
+                </div>
+            </div>
+        </div>
+
+</body>
+</html>

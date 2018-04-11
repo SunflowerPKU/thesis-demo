@@ -1,9 +1,90 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title></title>
+    <title>Overview</title>
+    <meta charset="utf-8">
+    <link rel="stylesheet" href="{{ url_for('static', filename='bootstrap.min.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='jquery-ui.min.css') }}">
+
+    <script src="{{ url_for('static', filename='echarts.js') }}"></script>
+    <script src="{{ url_for('static', filename='jquery-3.3.1.min.js') }}"></script>
+    <script src="{{ url_for('static', filename='jquery-ui.min.js') }}"></script>
+    <script src="{{ url_for('static', filename='popper.min.js') }}"></script>
+    <script src="{{ url_for('static', filename='bootstrap.min.js') }}"></script>
 </head>
 <body>
-    <h1>module page</h1>
+    <div class="container-fluid" style="margin-top: 50px; margin-bottom: 50px;">
+        <div class="row">
+            <div class="col-sm-1"></div>
+            <div class="col-sm-8">
+            <h1>{{ module_name }} 维护者概览</h1>
+            {% for (m1, m2) in metric_names %}
+                <div class="row">
+
+                    <div  class="col-sm-6">
+                        <div id="{{m1}}" style="width: 100%;height: 25vw;">
+                        </div>
+                    </div>
+
+                    <div  class="col-sm-6">
+                        <div id="{{ m2 }}" style="width: 100%;height:25vw;">
+                        </div>
+                    </div>
+
+                </div>
+            {% endfor %}
+            </div>
+            <div class="col-sm-3"  style="margin-top:100px;">
+                <div class="ui-widget">
+                  <label for="module">Search: </label>
+                  <input id="module_search" />
+                  <input type="button" value="Go" onclick="window.location.href='/module/' + $('#module_search').val()" />
+                </div>
+                <div><a href="/">首页</a></div>
+                <div><a href="{{url_for('list_modules')}}">所有模块</a></div>
+            </div>
+        </div>
+    </div>
+
+    <script type="text/javascript">
+    {% for metric_tuple in metric_names %}
+    {% for metric_name in metric_tuple %}
+
+        var {{metric_name}}_chart = echarts.init(document.getElementById('{{metric_name}}'));
+
+        xs = {{ metrics[metric_name]['data']['x'] | tojson }}
+        ys ={{ metrics[metric_name]['data']['y'] }}
+
+        // 指定图表的配置项和数据
+        var {{metric_name}}_option = {
+            title: {
+                text: '{{metric_labels[metric_name]}}'
+            },
+            tooltip: {},
+            // legend: {
+            //     data:['{{metric_labels[metric_name]}}']
+            // },
+            xAxis: {
+                data: xs
+            },
+            yAxis: {},
+            series: [{
+                name: '{{metric_labels[metric_name]}}',
+                type: 'bar',
+                data: ys
+            }]
+        };
+
+        {{metric_name}}_chart.setOption({{metric_name}}_option);
+    {% endfor %}
+    {% endfor %}
+
+    $( function() {
+        var module_list = {{modules | tojson }};
+        $( "#module_search" ).autocomplete({
+        source: module_list
+        }); 
+    } );
+    </script>
 </body>
 </html>

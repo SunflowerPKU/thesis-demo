@@ -3,25 +3,49 @@
 <head>
     <title>Overview</title>
     <meta charset="utf-8">
+    <link rel="stylesheet" href="{{ url_for('static', filename='bootstrap.min.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='jquery-ui.min.css') }}">
+
     <script src="{{ url_for('static', filename='echarts.js') }}"></script>
+    <script src="{{ url_for('static', filename='jquery-3.3.1.min.js') }}"></script>
+    <script src="{{ url_for('static', filename='jquery-ui.min.js') }}"></script>
+    <script src="{{ url_for('static', filename='popper.min.js') }}"></script>
+    <script src="{{ url_for('static', filename='bootstrap.min.js') }}"></script>
 </head>
 <body>
+    <div class="container-fluid" style="margin-top: 50px; margin-bottom: 50px;">
+        <div class="row">
+            <div class="col-sm-1"></div>
+            <div class="col-sm-8">
+            <h1>Linux Kernel Top60 维护者概览</h1>
+            {% for metric_name in metric_names %}
+                <div class="row">
 
-    {% for metric_name in metric_names %}
-        <div id="{{ metric_name }}">
-            <div>
-                <div id="{{ metric_name }}_median" style="width: 600px;height:400px;">
+                    <div  class="col-sm-6">
+                        <div id="{{ metric_name }}_median" style="width: 100%;height: 25vw;">
+                        </div>
+                        <p>Slope: {{metrics[metric_name]['median']['stat']['slope']}}  p-value: {{metrics[metric_name]['median']['stat']['p-value']}}</p>
+                    </div>
+
+                    <div  class="col-sm-6">
+                        <div id="{{ metric_name }}_mean" style="width: 100%;height:25vw;">
+                        </div>
+                        <p>Slope: {{metrics[metric_name]['mean']['stat']['slope']}}  p-value: {{metrics[metric_name]['mean']['stat']['p-value']}}</p>
+                    </div>
+
                 </div>
-                <p>Slope: {{metrics[metric_name]['median']['stat']['slope']}}  p-value: {{metrics[metric_name]['median']['stat']['p-value']}}</p>
+            {% endfor %}
             </div>
-
-            <div>
-                <div id="{{ metric_name }}_mean" style="width: 600px;height:400px;">
+            <div class="col-sm-3"  style="margin-top:100px;">
+                <div class="ui-widget">
+                  <label for="module">Search: </label>
+                  <input id="module_search" />
+                  <input type="button" value="Go" onclick="window.location.href='/module/' + $('#module_search').val()" />
                 </div>
-                <p>Slope: {{metrics[metric_name]['mean']['stat']['slope']}}  p-value: {{metrics[metric_name]['mean']['stat']['p-value']}}</p>
+                <a href="{{url_for('list_modules')}}">所有模块</a>
             </div>
         </div>
-    {% endfor %}
+    </div>
 
     <script type="text/javascript">
     {% for metric_name in metric_names %}
@@ -38,9 +62,9 @@
                 text: '{{metric_labels[metric_name]}} {{type_labels[type]}}'
             },
             tooltip: {},
-            legend: {
-                data:['{{metric_labels[metric_name]}} {{type_labels[type]}}']
-            },
+            // legend: {
+            //     data:['{{metric_labels[metric_name]}} {{type_labels[type]}}']
+            // },
             xAxis: {
                 data: xs
             },
@@ -55,6 +79,13 @@
         {{metric_name}}_{{type}}_chart.setOption({{metric_name}}_{{type}}_option);
     {% endfor %}
     {% endfor %}
+
+    $( function() {
+        var module_list = {{modules | tojson }};
+        $( "#module_search" ).autocomplete({
+        source: module_list
+        }); 
+    } );
     </script>
 </body>
 </html>
