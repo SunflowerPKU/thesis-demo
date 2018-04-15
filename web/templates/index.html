@@ -7,6 +7,7 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='jquery-ui.min.css') }}">
 
     <script src="{{ url_for('static', filename='echarts.js') }}"></script>
+    <script src="{{ url_for('static', filename='ecStat.min.js') }}"></script>
     <script src="{{ url_for('static', filename='jquery-3.3.1.min.js') }}"></script>
     <script src="{{ url_for('static', filename='jquery-ui.min.js') }}"></script>
     <script src="{{ url_for('static', filename='popper.min.js') }}"></script>
@@ -24,13 +25,11 @@
                     <div  class="col-sm-6">
                         <div id="{{ metric_name }}_median" style="width: 100%;height: 25vw;">
                         </div>
-                        <p>Slope: {{metrics[metric_name]['median']['stat']['slope']}}  p-value: {{metrics[metric_name]['median']['stat']['p-value']}}</p>
                     </div>
 
                     <div  class="col-sm-6">
                         <div id="{{ metric_name }}_mean" style="width: 100%;height:25vw;">
                         </div>
-                        <p>Slope: {{metrics[metric_name]['mean']['stat']['slope']}}  p-value: {{metrics[metric_name]['mean']['stat']['p-value']}}</p>
                     </div>
 
                 </div>
@@ -53,8 +52,19 @@
 
         var {{metric_name}}_{{type}}_chart = echarts.init(document.getElementById('{{metric_name}}_{{type}}'));
 
-        xs = {{ metrics[metric_name][type]['data']['x'] }}
-        ys ={{ metrics[metric_name][type]['data']['y'] }}
+        var xs = {{ metrics[metric_name][type]['data']['x'] }}
+        var ys ={{ metrics[metric_name][type]['data']['y'] }}
+
+        var data = xs.map(function(e, i) {
+          return [e - xs[0], ys[i]];
+        });
+
+        var {{metric_name}}_{{type}}_myRegression = ecStat.regression('linear', data);
+
+        {{metric_name}}_{{type}}_myRegression.points.sort(function(a, b) {
+            return a[0] - b[0];
+        });
+
 
         // 指定图表的配置项和数据
         var {{metric_name}}_{{type}}_option = {
@@ -69,10 +79,37 @@
                 data: xs
             },
             yAxis: {},
-            series: [{
-                name: '{{metric_labels[metric_name]}} {{type_labels[type]}}',
-                type: 'bar',
-                data: ys
+            series: [
+                {
+                    name: '{{metric_labels[metric_name]}} {{type_labels[type]}}',
+                    type: 'bar',
+                    data: ys
+                },{
+                    name: '{{metric_labels[metric_name]}} {{type_labels[type]}} line',
+                    type: 'line',
+                    data: {{metric_name}}_{{type}}_myRegression.points,
+                    markPoint: {
+                        itemStyle: {
+                            normal: {
+                                color: 'transparent'
+                            }
+                        },
+                        label: {
+                            normal: {
+                                fontWeight: 'bold',
+                                show: true,
+                                position: 'left',
+                                formatter: "slope: {{'%0.2f'|format(metrics[metric_name][type]['stat']['slope'])}} p-value: {{'%0.3f'|format(metrics[metric_name][type]['stat']['p-value'])}}",
+                                textStyle: {
+                                    color: '#333',
+                                    fontSize: 14
+                                }
+                            }
+                        },
+                        data: [{
+                            coord: {{metric_name}}_{{type}}_myRegression.points[{{metric_name}}_{{type}}_myRegression.points.length - 1]
+                        }]
+                    }
             }]
         };
 
