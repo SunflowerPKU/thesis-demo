@@ -29,7 +29,7 @@ def insert_metric(db, module_name, result, terms):
     db[module_name].insert_one(data)
 
 if __name__ == '__main__':
-    logging.basicConfig(format='%(asctime)s %(message)s', level=logging.DEBUG, filename='module_topic.log')
+    logging.basicConfig(format='%(asctime)s %(message)s', level=logging.DEBUG, filename='module_topic.log', filemode='w')
 
     client = MongoClient()
     db = client.research
@@ -47,6 +47,7 @@ if __name__ == '__main__':
     for module_name, info in modules.items():
         # if module_name != 'INTEL DRM DRIVERS (excluding Poulsbo, Moorestown and derivative chipsets)':
         #     continue
+        db[module_name].delete_many({'name' : 'topic'})
         try:
             if 'M' not in info:
                 continue

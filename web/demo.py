@@ -3,6 +3,9 @@
 from flask import *
 from pymongo import MongoClient
 from collections import defaultdict
+import scipy.stats as stats
+
+import pandas as pd
 
 app = Flask(__name__)
 
@@ -55,12 +58,17 @@ def module(module_name):
     metrics = {}
     for m in cursor:
         metrics[m['name']] = m
+        mann_whitney_u_test(metrics[m['name']], request.args)
     metric_names = [
         ('top_n_commit_count', 'top_n_commit_ratio'),
         ('latency_median', 'latency_mean'),
         ('non_contiguous_pressure', 'contiguous_pressure'),
         ('max_file_complexity', 'max_contact_complexity'),
     ]
+
+    keys = metrics['top_n_commit_count']['data']['x']
+
+
 
     metric_labels = {
         'top_n_commit_count': u'前n提交者提交数量',
@@ -81,7 +89,78 @@ def module(module_name):
                             metrics=metrics,
                             metric_names=metric_names,
                             metric_labels=metric_labels,
-                            modules=collections)
+                            modules=collections,
+                            keys=keys)
+
+def mann_whitney_u_test(metric, args):
+    if  'astart' not in args or\
+        'aend' not in args or\
+        'bstart' not in args or\
+        'bend' not in args or\
+        'data' not in metric:
+        return
+
+    astart = metric['data']['x'].index(args['astart'])
+    aend = metric['data']['x'].index(args['aend'])
+    bstart = metric['data']['x'].index(args['bstart'])
+    bend = metric['data']['x'].index(args['bend'])
+
+    data_a = metric['data']['y'][astart:aend + 1]
+    data_b = metric['data']['y'][bstart:bend + 1]
+    
+    if len(data_a) == 0 or len(data_b) == 0:
+        return
+    try:
+        greater_p = stats.mannwhitneyu(data_a, data_b, alternative='greater')[1]
+        less_p = stats.mannwhitneyu(data_a, data_b, alternative='less')[1]
+
+        if greater_p < 0.05:
+            sign = '>'
+            p_value = "{0:.3f}".format(greater_p)
+            stars = get_stars(greater_p)
+        elif less_p < 0.05:
+            sign = '<'
+            p_value = "{0:.3f}".format(less_p)
+            stars = get_stars(less_p)
+        else:
+            sign = '-'
+            p_value = "NA"
+            stars = "-"
+    except Exception, e:
+        sign = '-'
+        p_value = "NA"
+        stars = "-"
+
+
+    comparison = {
+        'data_a' : {
+            'from'   : args['astart'],
+            'to'     : args['aend'],
+            'mean'   : pd.Series(data_a).mean(),
+            'median' : pd.Series(data_a).median(),
+        },
+        'data_b' : {
+            'from'   : args['bstart'],
+            'to'     : args['bend'],
+            'mean'   : pd.Series(data_b).mean(),
+            'median' : pd.Series(data_b).median(),
+        },
+        'sign' : sign,
+        'p_value' : p_value,
+        'stars' : stars,
+    }
+    metric['comparison'] = comparison
+
+
+def get_stars(p):
+    if p <= 0.001:
+        return "***"
+    elif p <= 0.01:
+        return "**"
+    elif p <= 0.05:
+        return "*"
+    else:
+        return "-"
 
 @app.route('/modules')
 def list_modules():

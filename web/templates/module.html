@@ -6,6 +6,12 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='bootstrap.min.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='jquery-ui.min.css') }}">
 
+    <style type="text/css">
+        td {
+
+        }
+    </style>
+
     <script src="{{ url_for('static', filename='echarts.js') }}"></script>
     <script src="{{ url_for('static', filename='jquery-3.3.1.min.js') }}"></script>
     <script src="{{ url_for('static', filename='jquery-ui.min.js') }}"></script>
@@ -18,17 +24,67 @@
             <div class="col-sm-1"></div>
             <div class="col-sm-8">
             <h1>{{ module_name }} 维护者概览</h1>
+            <div style="width: 50%;margin: 20px;">
+                <table class="table table-bordered">
+                    <tr>
+                        <td>
+                            <p>
+                              <input type="text" id="set-a-input" readonly class="col-xs-1" style="border:0; font-weight:bold; ">
+                            </p>
+                            <div id="set-a"></div> 
+                        </td>
+                        <td class="text-center">
+                            <br/>
+                            <button id="compare">Compare</button> 
+                        </td>
+                        <td>
+                            <p>
+                              <input type="text" id="set-b-input" readonly style="border:0; font-weight:bold;">
+                            </p>
+                            <div id="set-b"></div> 
+                        </td>
+                    </tr>
+                </table>
+            </div>
             {% for (m1, m2) in metric_names %}
                 <div class="row">
 
                     <div  class="col-sm-6">
                         <div id="{{m1}}" style="width: 100%;height: 25vw;">
                         </div>
+                        {% if 'comparison' in metrics[m1]%}
+                        <table class="table table-bordered">
+                            <tr>
+                              <td class="text-center">From {{metrics[m1]['comparison']['data_a']['from']}} to {{metrics[m1]['comparison']['data_a']['to'] }}</td>
+                              <td class="text-center">{{ metrics[m1]['comparison']['sign']}}</td>
+                              <td class="text-center">From {{metrics[m1]['comparison']['data_b']['from']}} to {{metrics[m1]['comparison']['data_b']['to'] }}</td>
+                            </tr>
+                            <tr>
+                              <td class="text-center">Mean: {{'%0.3f'|format(metrics[m1]['comparison']['data_a']['mean'])}} <br/> Median: {{'%0.3f'|format(metrics[m1]['comparison']['data_a']['median'])}}</td>
+                              <td class="text-center">p-value: {{metrics[m1]['comparison']['p_value']}} <br/>{{metrics[m1]['comparison']['stars']}}  </td>
+                              <td class="text-center">Mean: {{'%0.3f'|format(metrics[m1]['comparison']['data_b']['mean'])}} <br/> Median: {{'%0.3f'|format(metrics[m1]['comparison']['data_b']['median'])}}</td>
+                            </tr>
+                        </table>
+                        {% endif %}
                     </div>
 
                     <div  class="col-sm-6">
                         <div id="{{ m2 }}" style="width: 100%;height:25vw;">
                         </div>
+                        {% if 'comparison' in metrics[m2]%}
+                        <table class="table table-bordered">
+                            <tr>
+                              <td class="text-center">From {{metrics[m2]['comparison']['data_a']['from']}} to {{metrics[m2]['comparison']['data_a']['to'] }}</td>
+                              <td class="text-center">{{ metrics[m2]['comparison']['sign']}}</td>
+                              <td class="text-center">From {{metrics[m2]['comparison']['data_b']['from']}} to {{metrics[m2]['comparison']['data_b']['to'] }}</td>
+                            </tr>
+                            <tr>
+                              <td class="text-center">Mean: {{'%0.3f'|format(metrics[m2]['comparison']['data_a']['mean'])}} <br/> Median: {{'%0.3f'|format(metrics[m2]['comparison']['data_a']['median'])}}</td>
+                              <td class="text-center">p-value: {{metrics[m2]['comparison']['p_value']}}<br/>{{metrics[m2]['comparison']['stars']}}</td>
+                              <td class="text-center">Mean: {{'%0.3f'|format(metrics[m2]['comparison']['data_b']['mean'])}} <br/> Median: {{'%0.3f'|format(metrics[m2]['comparison']['data_b']['median'])}}</td>
+                            </tr>
+                        </table>
+                        {% endif %}
                     </div>
 
                 </div>
@@ -47,6 +103,8 @@
     </div>
 
     <script type="text/javascript">
+
+  
     {% for metric_tuple in metric_names %}
     {% for metric_name in metric_tuple %}
 
@@ -79,11 +137,61 @@
     {% endfor %}
     {% endfor %}
 
+    var getUrlParameter = function getUrlParameter(sParam) {
+        var sPageURL = decodeURIComponent(window.location.search.substring(1)),
+            sURLVariables = sPageURL.split('&'),
+            sParameterName,
+            i;
+
+        for (i = 0; i < sURLVariables.length; i++) {
+            sParameterName = sURLVariables[i].split('=');
+
+            if (sParameterName[0] === sParam) {
+                return sParameterName[1] === undefined ? true : sParameterName[1];
+            }
+        }
+    };
+
     $( function() {
+
+        keys = {{keys | tojson}}
+        astart = keys.findIndex(function(e){ return e == getUrlParameter('astart')})
+        aend = keys.findIndex(function(e){ return e == getUrlParameter('aend')})
+        bstart = keys.findIndex(function(e){ return e == getUrlParameter('bstart')})
+        bend = keys.findIndex(function(e){ return e == getUrlParameter('bend')})
+
+        $( "#set-a" ).slider({
+          range: true,
+          min: 0,
+          max: keys.length - 1,
+          values: [ astart > 0 ? astart : 0, aend > 0 ? aend : 0 ],
+          slide: function( event, ui ) {
+            $( "#set-a-input" ).val( "From " + keys[ui.values[ 0 ]] + " to " + keys[ui.values[ 1 ] ]);
+          }
+        });
+        $( "#set-a-input" ).val( "From " + keys[$( "#set-a" ).slider( "values", 0 )] +
+          " to " + keys[$( "#set-a" ).slider( "values", 1 )]);
+
+        $( "#set-b" ).slider({
+          range: true,
+          min: 0,
+          max: keys.length - 1,
+          values: [ bstart > 0 ? bstart : keys.length - 1, bend > 0 ? bend : keys.length - 1],
+          slide: function( event, ui ) {
+            $( "#set-b-input" ).val( "From " + keys[ui.values[ 0 ]] + " to " + keys[ui.values[ 1 ] ]);
+          }
+        });
+        $( "#set-b-input" ).val( "From " + keys[$( "#set-b" ).slider( "values", 0 )] +
+          " to " + keys[$( "#set-b" ).slider( "values", 1 )]);
+
         var module_list = {{modules | tojson }};
         $( "#module_search" ).autocomplete({
         source: module_list
-        }); 
+        });
+
+        $("#compare").click(function(){
+            window.location.href= window.location.pathname + '?astart=' +  keys[$( "#set-a" ).slider( "values", 0 )] + '&aend=' +  keys[$( "#set-a" ).slider( "values", 1 )] + '&bstart=' + keys[$( "#set-b" ).slider( "values", 0 )] + '&bend=' +  keys[$( "#set-b" ).slider( "values", 1 )]
+        });
     } );
     </script>
 </body>

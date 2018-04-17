@@ -22,6 +22,11 @@ def lda(messages, num_topics=5):
     p_stemmer = PorterStemmer()
 
     def preprocess(message):
+        to_remove = ['\nReviewed-by:', '\nSigned-off-by:', '\nCc:', '\nLink:']
+        for prefix in to_remove:
+            idx = message.find(prefix)
+            if idx != -1:
+                message = message[:idx]
         tokens = tokenizer.tokenize(message.lower())
         stopped_tokens = [i for i in tokens if (not i in en_stop) and (not i.isdigit()) and (len(i) > 2)]
         stemmed_tokens = [p_stemmer.stem(i) for i in stopped_tokens]
@@ -32,10 +37,8 @@ def lda(messages, num_topics=5):
     corpus = [dictionary.doc2bow(text) for text in texts]
     tfidf = models.TfidfModel(corpus, id2word=dictionary)
     vec = [v for k,v in tfidf.idfs.items()]
-    low_value = 0.02
-    low_value_words = []
-    for bow in corpus:
-        low_value_words += [id for id, value in tfidf[bow] if value < low_value]
+    threshold = pd.Series(vec).quantile(0.01)
+    low_value_words = [k for k,v in tfidf.idfs.items() if v < threshold]
     dictionary.filter_tokens(bad_ids=low_value_words)
     corpus = [dictionary.doc2bow(text) for text in texts]
 
