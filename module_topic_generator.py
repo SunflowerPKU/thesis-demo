@@ -47,8 +47,8 @@ if __name__ == '__main__':
     for module_name, info in modules.items():
         # if module_name != 'INTEL DRM DRIVERS (excluding Poulsbo, Moorestown and derivative chipsets)':
         #     continue
-        db[module_name].delete_many({'name' : 'topic'})
         try:
+            db[module_name].delete_many({'name' : 'topic'})
             if 'M' not in info:
                 continue
             if 'F' not in info:
@@ -69,7 +69,7 @@ if __name__ == '__main__':
             for year in range(2013, 2018):
                 for month in range(1,13):
                     if year == 2017 and month == 7:
-                        continue
+                        break
                     selected = combined[combined.committed_datetime.map(lambda t: t.year == year and t.month == month)]
                     topics = selected[[i for i in range(5)]].mean()
                     result[(year, month)] = topics

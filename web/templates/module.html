@@ -89,6 +89,10 @@
 
                 </div>
             {% endfor %}
+
+            {% if 'topic' in metrics %}
+            <div id="topic" style="width: 100%;height:50vw;"></div>
+            {% endif %}
             </div>
             <div class="col-sm-3"  style="margin-top:100px;">
                 <div class="ui-widget">
@@ -103,6 +107,7 @@
     </div>
 
     <script type="text/javascript">
+    keys = {{keys | tojson}}
 
   
     {% for metric_tuple in metric_names %}
@@ -114,9 +119,14 @@
         ys ={{ metrics[metric_name]['data']['y'] }}
 
         // 指定图表的配置项和数据
+        var title = "{{metric_labels[metric_name]}}"
+        if( title.indexOf('n') != -1 ) {
+            title = title + " (n=" + {{ metrics[metric_name]['n']}} + ')';
+        }
+
         var {{metric_name}}_option = {
             title: {
-                text: '{{metric_labels[metric_name]}}'
+                text: title
             },
             tooltip: {},
             // legend: {
@@ -137,6 +147,76 @@
     {% endfor %}
     {% endfor %}
 
+    {% if 'topic' in metrics %}
+    var topic_chart = echarts.init(document.getElementById('topic'));
+
+    topic_option = {
+        legend: {
+            data : [],
+        },
+        tooltip: {
+            trigger: 'axis',
+            showContent: true
+        },
+        dataset: {
+            source: [
+                ['topic'].concat(keys),
+                ['{{ ','.join(metrics['topic']['terms']['0']) }}'].concat({{ metrics['topic']['topics']['0'] | tojson}}.map(function(e){return Number(e.toFixed(3))})),
+                ['{{ ','.join(metrics['topic']['terms']['1']) }}'].concat({{ metrics['topic']['topics']['1'] | tojson}}.map(function(e){return Number(e.toFixed(3))})),
+                ['{{ ','.join(metrics['topic']['terms']['2']) }}'].concat({{ metrics['topic']['topics']['2'] | tojson}}.map(function(e){return Number(e.toFixed(3))})),
+                ['{{ ','.join(metrics['topic']['terms']['3']) }}'].concat({{ metrics['topic']['topics']['3'] | tojson}}.map(function(e){return Number(e.toFixed(3))})),
+                ['{{ ','.join(metrics['topic']['terms']['4']) }}'].concat({{ metrics['topic']['topics']['4'] | tojson}}.map(function(e){return Number(e.toFixed(3))})),
+            ]
+        },
+        xAxis: {type: 'category'},
+        yAxis: {gridIndex: 0},
+        grid: {top: '50%'},
+        series: [
+            {type: 'line', smooth: false, seriesLayoutBy: 'row'},
+            {type: 'line', smooth: false, seriesLayoutBy: 'row'},
+            {type: 'line', smooth: false, seriesLayoutBy: 'row'},
+            {type: 'line', smooth: false, seriesLayoutBy: 'row'},
+            {type: 'line', smooth: false, seriesLayoutBy: 'row'},
+            {
+                type: 'pie',
+                id: 'pie',
+                radius: '30%',
+                center: ['50%', '25%'],
+                label: {
+                    formatter: '{b}: {@2013.1}'
+                },
+                encode: {
+                    itemName: 'topic',
+                    value: '2013.1',
+                    tooltip: '2013.1'
+                }
+            }
+        ]
+    };
+
+    topic_chart.on('updateAxisPointer', function (event) {
+        var xAxisInfo = event.axesInfo[0];
+        if (xAxisInfo) {
+            var dimension = xAxisInfo.value + 1;
+            topic_chart.setOption({
+                series: {
+                    id: 'pie',
+                    label: {
+                        formatter: '{b}: {@[' + dimension + ']}'
+                    },
+                    encode: {
+                        value: dimension,
+                        tooltip: dimension
+                    }
+                }
+            });
+        }
+    });
+
+    topic_chart.setOption(topic_option);
+    {% endif %}
+
+
     var getUrlParameter = function getUrlParameter(sParam) {
         var sPageURL = decodeURIComponent(window.location.search.substring(1)),
             sURLVariables = sPageURL.split('&'),
@@ -154,7 +234,6 @@
 
     $( function() {
 
-        keys = {{keys | tojson}}
         astart = keys.findIndex(function(e){ return e == getUrlParameter('astart')})
         aend = keys.findIndex(function(e){ return e == getUrlParameter('aend')})
         bstart = keys.findIndex(function(e){ return e == getUrlParameter('bstart')})
