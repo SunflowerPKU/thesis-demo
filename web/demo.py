@@ -127,6 +127,7 @@ def mann_whitney_u_test(metric, args):
             p_value = "NA"
             stars = "-"
     except Exception, e:
+        print e
         sign = '-'
         p_value = "NA"
         stars = "-"
